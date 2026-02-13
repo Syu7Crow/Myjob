@@ -2,26 +2,21 @@ import Link from 'next/link';
 
 export default function Home() {
   return (
-    <main style={{ padding: '40px', textAlign: 'center', fontFamily: 'sans-serif' }}>
-      <h1>MyJob キッチンアシスタント</h1>
-      <p>管理したい項目を選択してください</p>
+    <main className="p-10 text-center font-sans bg-gray-50 min-h-screen">
+      <h1 className="text-3xl font-bold text-gray-800 mb-2">MyJob キッチンアシスタント</h1>
+      <p className="text-gray-600 mb-8">管理したい項目を選択してください</p>
 
-      <div style={{
-        display: 'flex',
-        gap: '20px',
-        justifyContent: 'center',
-        marginTop: '30px'
-      }}>
+      <div className="flex gap-5 justify-center mt-8">
         {/* 冷蔵庫ページへのボタン */}
         <Link href="/refrigerator">
-          <button style={buttonStyle}>
+          <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg transition-all transform hover:scale-105">
             📦 冷蔵庫の中身を見る
           </button>
         </Link>
 
         {/* スキャンページへのボタン */}
         <Link href="/scan">
-          <button style={{ ...buttonStyle, backgroundColor: '#28a745' }}>
+          <button className="bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg transition-all transform hover:scale-105">
             📷 食材をスキャンする
           </button>
         </Link>
@@ -29,16 +24,3 @@ export default function Home() {
     </main>
   );
 }
-
-// 共通のボタンデザイン
-const buttonStyle = {
-  padding: '15px 25px',
-  fontSize: '18px',
-  color: 'white',
-  backgroundColor: '#0070f3',
-  border: 'none',
-  borderRadius: '10px',
-  cursor: 'pointer',
-  fontWeight: 'bold',
-  transition: 'opacity 0.2s',
-};

@@ -1,4 +1,6 @@
-import React from "react"
+// 一番上に追加
+
+import "./globals.css";
 
 export const metadata = {
   title: "Myjob",
@@ -12,10 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ja">
-      <body>
-        {/* ここに page.tsx の内容が流し込まれます */}
-        {children}
-      </body>
+      <body>{children}</body>
     </html>
   )
 }
