@@ -20,9 +20,8 @@ export default async function RefrigeratorPage() {
           {foods.length === 0 ? (
             <p className="text-center text-gray-500 py-10">食材がありません</p>
           ) : (
-            // TypeScriptの推論を助けるため、mapの引数に明示的に型(anyまたは具体的な型)をあてるか、
-            // Prismaが生成した型をそのまま利用します
-            foods.map((food) => (
+            // (food: any) と書くことで TypeScript のエラーを強制回避します
+            foods.map((food: any) => (
               <div key={food.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
                 <div>
                   <h2 className="font-bold text-lg text-gray-700">{food.name}</h2>
@@ -40,10 +39,8 @@ export default async function RefrigeratorPage() {
           )}
         </div>
 
-        <Link href="/add">
-          <div className="w-full mt-8 bg-blue-600 text-white py-3 rounded-xl font-bold shadow-md hover:bg-blue-700 transition text-center cursor-pointer">
-            ＋ 食材を追加する
-          </div>
+        <Link href="/add" className="block w-full mt-8 bg-blue-600 text-white py-3 rounded-xl font-bold shadow-md hover:bg-blue-700 transition text-center">
+          ＋ 食材を追加する
         </Link>
       </div>
     </div>
