@@ -1,11 +1,7 @@
 import { defineConfig } from '@prisma/config';
-// 環境変数を読み込むための設定
-import { config } from 'dotenv';
-config(); 
 
 export default defineConfig({
   datasource: {
-    // 環境変数が空の場合のフォールバックも念のため確認
-    url: process.env.POSTGRES_PRISMA_URL,
+    url: "postgresql://neondb_owner:npg_H4lQ9qrbVIMC@ep-hidden-voice-a14s41dg-pooler.ap-southeast-1.aws.neon.tech/neondb?connect_timeout=15&sslmode=require",
   },
 });

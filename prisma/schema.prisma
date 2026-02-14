@@ -1,18 +1,17 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
-  // url と directUrl は削除して provider だけ残す
 }
 
 model Food {
-  id        Int      @id @default(autoincrement())
-  name      String
-  quantity  String
-  expiry    String?
-  createdAt DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  userId      String   // user_id
+  name        String   // name
+  quantity    String   // 個数
+  buyDate     DateTime @default(now()) // buy_date (デフォルトは今日)
+  trashDate   DateTime? // trash_date (空でもOK)
+  createdAt   DateTime @default(now())
 }
