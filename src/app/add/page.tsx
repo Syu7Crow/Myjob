@@ -156,16 +156,33 @@ export default function AddFoodPage() {
                     <input name="name" value={name} onChange={(e) => setName(e.target.value)} required placeholder="食材名" className="w-full px-6 py-4 bg-gray-50 rounded-2xl font-bold outline-none" />
 
                     <div className="flex gap-2">
-                        <div className="flex-[2] flex items-center bg-gray-50 rounded-2xl px-2">
-                            <button type="button" onClick={() => setQuantity(q => Math.max(0, q - (unit === 'g' ? 50 : 1)))} className="w-10 h-10 text-emerald-500 font-black text-xl">−</button>
+                        {/* 数量入力: 少し幅を狭めて単位側に譲る */}
+                        <div className="flex-[1.8] flex items-center bg-gray-50 rounded-2xl px-1">
+                            <button type="button" onClick={() => setQuantity(q => Math.max(0, q - (unit === 'g' ? 50 : 1)))} className="w-10 h-10 text-emerald-500 font-black text-xl active:scale-90 transition-transform">−</button>
                             <input type="hidden" name="quantity" value={`${quantity}${unit}`} />
-                            <input type="text" value={quantity} onChange={(e) => setQuantity(Number(e.target.value.replace(/[^0-9]/g, '')))} className="flex-1 bg-transparent text-center font-bold" />
-                            <button type="button" onClick={() => setQuantity(q => q + (unit === 'g' ? 50 : 1))} className="w-10 h-10 text-emerald-500 font-black text-xl">+</button>
+                            <input
+                                type="text"
+                                value={quantity}
+                                onChange={(e) => setQuantity(Number(e.target.value.replace(/[^0-9]/g, '')))}
+                                className="w-full bg-transparent text-center font-bold text-gray-700 outline-none min-w-0"
+                            />
+                            <button type="button" onClick={() => setQuantity(q => q + (unit === 'g' ? 50 : 1))} className="w-10 h-10 text-emerald-500 font-black text-xl active:scale-90 transition-transform">+</button>
                         </div>
-                        <select value={unit} onChange={(e) => setUnit(e.target.value)} className="flex-[1] bg-gray-50 rounded-2xl font-bold text-gray-500 text-center outline-none">
-                            {['個', 'パック', '本', 'g', 'ml', 'L', '袋'].map(u => <option key={u} value={u}>{u}</option>)}
-                        </select>
-                    </div>
+
+                        {/* 単位選択: 幅を確保し、右側の見切れを防止 */}
+                        <div className="flex-[1.2] relative">
+                            <select
+                                value={unit}
+                                onChange={(e) => setUnit(e.target.value)}
+                                className="w-full h-full bg-gray-50 rounded-2xl font-bold text-gray-600 text-center outline-none appearance-none pr-2 cursor-pointer border-r-8 border-transparent"
+                            >
+                                {['個', 'パック', '本', 'g', 'ml', 'L', '袋'].map(u => (
+                                    <option key={u} value={u}>{u}</option>
+                                ))}
+                            </select>
+                            {/* 下向き矢印などの装飾が必要なければそのままでOK */}
+                        </div>
+                    </div>  
 
                     <div className="relative h-20">
                         <input type="date" name="trashDate" value={dateStr} onChange={(e) => { const d = new Date(e.target.value); if (!isNaN(d.getTime())) { setSelYear(d.getFullYear()); setSelMonth(d.getMonth() + 1); setSelDay(d.getDate()); } }} className="absolute inset-0 opacity-0 z-30 cursor-pointer" />
