@@ -1,9 +1,8 @@
-// src/app/refrigerator/page.tsx
 import Link from 'next/link';
-import { prisma } from '@/lib/prisma'; // さっき苦労して作ったprisma.ts
+import { prisma } from '@/lib/prisma';
 
 export default async function RefrigeratorPage() {
-  // DBから全食材を取得（userIdが固定ならwhere句はなくてもOKですが、一応）
+  // DBから全食材を取得
   const foods = await prisma.food.findMany({
     where: { userId: "user_01" },
     orderBy: { buyDate: 'asc' },
@@ -21,6 +20,8 @@ export default async function RefrigeratorPage() {
           {foods.length === 0 ? (
             <p className="text-center text-gray-500 py-10">食材がありません</p>
           ) : (
+            // TypeScriptの推論を助けるため、mapの引数に明示的に型(anyまたは具体的な型)をあてるか、
+            // Prismaが生成した型をそのまま利用します
             foods.map((food) => (
               <div key={food.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
                 <div>
@@ -40,9 +41,9 @@ export default async function RefrigeratorPage() {
         </div>
 
         <Link href="/add">
-          <button className="w-full mt-8 bg-blue-600 text-white py-3 rounded-xl font-bold shadow-md hover:bg-blue-700 transition">
+          <div className="w-full mt-8 bg-blue-600 text-white py-3 rounded-xl font-bold shadow-md hover:bg-blue-700 transition text-center cursor-pointer">
             ＋ 食材を追加する
-          </button>
+          </div>
         </Link>
       </div>
     </div>
