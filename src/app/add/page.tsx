@@ -4,6 +4,20 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { addFood } from "@/lib/actions";
 import Link from 'next/link';
 
+// 型の定義（ビルドエラー防止）
+type FoodSub = {
+    icon: string;
+    parts: string[];
+};
+
+type FoodCategory = {
+    icon: string;
+    days: number;
+    qty: number;
+    unit: string;
+    subs: Record<string, FoodSub>;
+};
+
 export default function AddFoodPage() {
     const [name, setName] = useState("");
     const [quantity, setQuantity] = useState(1);
@@ -20,7 +34,7 @@ export default function AddFoodPage() {
     const monthScrollRef = useRef<HTMLDivElement>(null);
     const dayScrollRef = useRef<HTMLDivElement>(null);
 
-    const foodHierarchy: any = {
+    const foodHierarchy: Record<string, FoodCategory> = {
         '肉': {
             icon: '🥩', days: 2, qty: 300, unit: 'g',
             subs: {
@@ -68,6 +82,12 @@ export default function AddFoodPage() {
     const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
     const dateStr = useMemo(() => `${selYear}-${String(selMonth).padStart(2, '0')}-${String(selDay).padStart(2, '0')}`, [selYear, selMonth, selDay]);
 
+    const updateExpiration = (daysToAdd: number) => {
+        const d = new Date();
+        d.setDate(d.getDate() + daysToAdd);
+        setSelYear(d.getFullYear()); setSelMonth(d.getMonth() + 1); setSelDay(d.getDate());
+    };
+
     const handleMainSelect = (label: string) => {
         setActiveCategory(label);
         setActiveSubCategory(null);
@@ -78,12 +98,6 @@ export default function AddFoodPage() {
             setUnit(config.unit);
             updateExpiration(config.days);
         }
-    };
-
-    const updateExpiration = (daysToAdd: number) => {
-        const d = new Date();
-        d.setDate(d.getDate() + daysToAdd);
-        setSelYear(d.getFullYear()); setSelMonth(d.getMonth() + 1); setSelDay(d.getDate());
     };
 
     const syncScroll = (ref: React.RefObject<HTMLDivElement | null>, value: number, offset: number = 1) => {
@@ -98,7 +112,6 @@ export default function AddFoodPage() {
     return (
         <div className="min-h-screen bg-[#F8FAFA] p-4 flex flex-col items-center">
             <div className="w-full max-w-md bg-white rounded-[3rem] shadow-2xl border border-emerald-50 p-8">
-
                 <div className="flex justify-between items-center mb-6">
                     <h1 className="text-2xl font-black text-gray-800 tracking-tight">食材登録</h1>
                     <Link href="/refrigerator" className="text-gray-400">✕</Link>
@@ -108,17 +121,17 @@ export default function AddFoodPage() {
                 <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
                     {mainQuickItems.map((item) => (
                         <button key={item.label} type="button" onClick={() => handleMainSelect(item.label)}
-                            className={`flex-shrink-0 flex flex-col items-center gap-1 p-3 w-20 rounded-2xl transition-all border ${activeCategory === item.label ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg' : 'bg-white border-gray-100 text-gray-500'}`}>
+                            className={`flex-shrink-0 flex flex-col items-center gap-1 p-3 w-20 rounded-2xl transition-all border ${activeCategory === item.label ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-gray-100 text-gray-500'}`}>
                             <span className="text-2xl">{item.icon}</span>
                             <span className="text-[10px] font-bold">{item.label}</span>
                         </button>
                     ))}
                 </div>
 
-                {/* 2段目：安全な参照に変更 */}
+                {/* 2段目 */}
                 {activeCategory && foodHierarchy[activeCategory]?.subs && (
-                    <div className="flex gap-2 overflow-x-auto py-2 scrollbar-hide animate-in slide-in-from-top-2">
-                        {Object.entries(foodHierarchy[activeCategory].subs).map(([subKey, subVal]: any) => (
+                    <div className="flex gap-2 overflow-x-auto py-2 scrollbar-hide">
+                        {Object.entries(foodHierarchy[activeCategory].subs).map(([subKey, subVal]) => (
                             <button key={subKey} type="button" onClick={() => { setActiveSubCategory(subKey); setName(subKey); }}
                                 className={`flex-shrink-0 px-4 py-2 rounded-xl font-bold text-xs border-2 transition-all ${activeSubCategory === subKey ? 'bg-emerald-100 border-emerald-500 text-emerald-700' : 'bg-gray-50 border-transparent text-gray-400'}`}>
                                 {subVal.icon} {subKey}
@@ -127,10 +140,10 @@ export default function AddFoodPage() {
                     </div>
                 )}
 
-                {/* 3段目：オプショナルチェイニング ?. で安全に参照 */}
-                {activeCategory && activeSubCategory && foodHierarchy[activeCategory]?.subs?.[activeSubCategory]?.parts && (
-                    <div className="flex flex-wrap gap-2 py-3 animate-in fade-in">
-                        {foodHierarchy[activeCategory].subs[activeSubCategory].parts.map((part: string) => (
+                {/* 3段目 */}
+                {activeCategory && activeSubCategory && foodHierarchy[activeCategory]?.subs?.[activeSubCategory] && (
+                    <div className="flex flex-wrap gap-2 py-3">
+                        {foodHierarchy[activeCategory].subs[activeSubCategory].parts.map((part) => (
                             <button key={part} type="button" onClick={() => setName(`${activeSubCategory} ${part}`)}
                                 className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all ${name === `${activeSubCategory} ${part}` ? 'bg-gray-800 text-white' : 'bg-white border-gray-200 text-gray-500'}`}>
                                 {part}
@@ -140,7 +153,7 @@ export default function AddFoodPage() {
                 )}
 
                 <form action={addFood} className="space-y-6 mt-4">
-                    <input name="name" value={name} onChange={(e) => setName(e.target.value)} required placeholder="食材名" className="w-full px-6 py-4 bg-gray-50 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-emerald-500" />
+                    <input name="name" value={name} onChange={(e) => setName(e.target.value)} required placeholder="食材名" className="w-full px-6 py-4 bg-gray-50 rounded-2xl font-bold outline-none" />
 
                     <div className="flex gap-2">
                         <div className="flex-[2] flex items-center bg-gray-50 rounded-2xl px-2">
