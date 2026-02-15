@@ -9,15 +9,15 @@ export async function addFood(formData: FormData) {
     const name = formData.get("name") as string;
     const quantity = formData.get("quantity") as string;
     const buyDate = formData.get("buyDate") as string;
-    const trashDate = formData.get("trashDate") as string; // 追加
+    const trashDate = formData.get("trashDate") as string;
 
-    await prisma.food.create({
+    await prisma.refrigerator.create({
         data: {
             userId: "user_01",
             name: name,
             quantity: quantity,
-            buyDate: new Date(buyDate),
-            trashDate: trashDate ? new Date(trashDate) : null, // 追加
+            buyDate: buyDate ? new Date(buyDate) : new Date(),
+            trashDate: trashDate ? new Date(trashDate) : null,
         },
     });
 
