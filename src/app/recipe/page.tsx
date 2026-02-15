@@ -30,7 +30,7 @@ export default async function RecipePage() {
 
                     {/* ナビゲーション */}
                     <div className="flex gap-4 mb-8">
-                        <Link href="/refrigerator" className="bg-white text-gray-400 px-6 py-2 rounded-full font-bold hover:bg-gray-50 transition-colors">
+                        <Link href="/" className="bg-white text-gray-400 px-6 py-2 rounded-full font-bold hover:bg-gray-50 transition-colors">
                             冷蔵庫
                         </Link>
                         <button className="bg-blue-600 text-white px-6 py-2 rounded-full font-bold shadow-md shadow-blue-100">
