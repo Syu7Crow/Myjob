@@ -1,26 +1,25 @@
-// src/lib/actions.ts
-"use server"
+"use server";
 
-import { prisma } from './prisma'
-import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
+import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 export async function addFood(formData: FormData) {
-    const name = formData.get("name") as string;
-    const quantity = formData.get("quantity") as string;
-    const buyDate = formData.get("buyDate") as string;
-    const trashDate = formData.get("trashDate") as string;
+  const name = formData.get("name") as string;
+  const quantity = formData.get("quantity") as string;
+  const trashDate = formData.get("trashDate") as string;
 
-    await prisma.refrigerator.create({
-        data: {
-            userId: "user_01",
-            name: name,
-            quantity: quantity,
-            buyDate: buyDate ? new Date(buyDate) : new Date(),
-            trashDate: trashDate ? new Date(trashDate) : null,
-        },
-    });
+  await prisma.refrigerator.create({
+    data: {
+      userId: "user_01", // 認証を入れるまでは固定値でOK
+      name: name,
+      quantity: quantity,
+      trashDate: trashDate ? new Date(trashDate) : null,
+    },
+  });
 
-    revalidatePath("/refrigerator");
-    redirect("/refrigerator");
+  // データを更新したので冷蔵庫ページを再読込させる
+  revalidatePath("/refrigerator");
+  // 冷蔵庫ページに戻る
+  redirect("/refrigerator");
 }
