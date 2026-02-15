@@ -2,8 +2,8 @@ import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { Recipe, Ingredient } from '@prisma/client';
 import { generateRecipeAction } from './actions';
+import { SubmitButton } from './SubmitButton'; // 作成したボタンをインポート
 
-// キャッシュを無効化して常に最新のDBを表示
 export const dynamic = "force-dynamic";
 
 type RecipeWithIngredients = Recipe & {
@@ -52,7 +52,7 @@ export default async function RecipePage() {
                         {recipes.length === 0 ? (
                             <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-gray-100">
                                 <p className="text-gray-400 font-bold">まだレシピがありません 🍳</p>
-                                <p className="text-xs text-gray-300 mt-2 text-balance">AIに冷蔵庫の食材から考えてもらいましょう</p>
+                                <p className="text-xs text-gray-300 mt-2">AIに献立を考えてもらいましょう</p>
                             </div>
                         ) : (
                             recipes.map((recipe) => (
@@ -69,22 +69,38 @@ export default async function RecipePage() {
                                         </div>
 
                                         <div className="flex flex-wrap gap-2 mb-6">
-                                            {recipe.ingredients.slice(0, 5).map((ing) => (
+                                            {recipe.ingredients.map((ing) => (
                                                 <span key={ing.id} className="text-[10px] bg-gray-50 text-gray-500 px-2 py-1 rounded-md border border-gray-100">
                                                     {ing.name}
                                                 </span>
                                             ))}
                                         </div>
 
-                                        <a
-                                            href={`https://delishkitchen.tv/search?q=${encodeURIComponent(recipe.title)}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="w-full bg-[#f37b21] hover:bg-[#e66a10] text-white py-4 rounded-2xl font-bold flex items-center justify-center space-x-2 transition-all active:scale-[0.98] shadow-lg shadow-orange-100"
-                                        >
-                                            <span className="text-lg">🍳</span>
-                                            <span>デリッシュキッチンで作り方を見る</span>
-                                        </a>
+                                        {(() => {
+                                            const isCookpad = recipe.searchUrl?.includes("cookpad.com");
+                                            const isRakuten = recipe.searchUrl?.includes("rakuten.co.jp");
+                                            const isDelish = recipe.searchUrl?.includes("delishkitchen.tv");
+
+                                            const config = isCookpad 
+                                                ? { name: "クックパッド", color: "bg-[#ff6400]", shadow: "shadow-orange-100" }
+                                                : isRakuten
+                                                ? { name: "楽天レシピ", color: "bg-[#bf0000]", shadow: "shadow-red-100" }
+                                                : isDelish
+                                                ? { name: "デリッシュキッチン", color: "bg-[#f37b21]", shadow: "shadow-orange-100" }
+                                                : { name: "Googleレシピ検索", color: "bg-gray-700", shadow: "shadow-gray-100" };
+
+                                            return (
+                                                <a
+                                                    href={recipe.searchUrl || `https://www.google.com/search?q=${encodeURIComponent(recipe.title)}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className={`w-full ${config.color} text-white py-4 rounded-2xl font-bold flex items-center justify-center space-x-2 transition-all active:scale-[0.98] shadow-lg ${config.shadow} hover:opacity-90`}
+                                                >
+                                                    <span className="text-lg">🍳</span>
+                                                    <span>{config.name}で作り方を見る</span>
+                                                </a>
+                                            );
+                                        })()}
                                     </div>
                                 </div>
                             ))
@@ -94,13 +110,7 @@ export default async function RecipePage() {
                     {/* AIレシピ生成ボタン */}
                     <div className="fixed bottom-8 left-0 right-0 px-6">
                         <form action={generateRecipeAction as any} className="max-w-2xl mx-auto w-full">
-                            <button
-                                type="submit"
-                                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center space-x-2 shadow-xl shadow-blue-200 hover:opacity-90 transition-all active:scale-[0.98]"
-                            >
-                                <span className="text-xl">✨</span>
-                                <span>AIにレシピを考えてもらう</span>
-                            </button>
+                            <SubmitButton />
                         </form>
                     </div>
 
