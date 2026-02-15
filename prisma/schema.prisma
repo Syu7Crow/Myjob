@@ -7,7 +7,7 @@ datasource db {
   provider = "postgresql"
 }
 
-model Food {
+model refrigerator {
   id          Int      @id @default(autoincrement())
   userId      String   // user_id
   name        String   // name
