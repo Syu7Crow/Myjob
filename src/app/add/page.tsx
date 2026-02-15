@@ -3,6 +3,10 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { addFood } from "@/lib/actions";
 import Link from 'next/link';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs, { type Dayjs } from 'dayjs';
 
 // --- 型定義 ---
 type FoodSub = {
@@ -64,6 +68,7 @@ export default function AddFoodPage() {
     const [selYear, setSelYear] = useState(today.getFullYear());
     const [selMonth, setSelMonth] = useState(today.getMonth() + 1);
     const [selDay, setSelDay] = useState(today.getDate());
+    const [date, setDate] = useState(dayjs());
 
     const monthScrollRef = useRef<HTMLDivElement>(null);
     const dayScrollRef = useRef<HTMLDivElement>(null);
@@ -213,24 +218,18 @@ export default function AddFoodPage() {
                         </select>
                     </div>
 
-                    <div className="relative h-24">
-                        <input type="date" name="trashDate" value={dateStr} min={todayStr} onChange={(e) => { const val = e.target.value; if (!val) return; if (val < todayStr) { const d = new Date(todayStr); setSelYear(d.getFullYear()); setSelMonth(d.getMonth() + 1); setSelDay(d.getDate()); } else { const d = new Date(val); if (!isNaN(d.getTime())) { setSelYear(d.getFullYear()); setSelMonth(d.getMonth() + 1); setSelDay(d.getDate()); } } }} className="absolute inset-0 opacity-0 z-30 cursor-pointer" />
-                        <div className="absolute inset-0 bg-emerald-50 border-2 border-emerald-100 rounded-[2.5rem] flex flex-col items-center justify-center">
-                            <span className="text-[10px] font-black text-emerald-400 tracking-tighter uppercase mb-1">Expiration Date</span>
-                            <span className="font-black text-emerald-600 text-2xl tracking-tight">{selYear}年 {selMonth}月 {selDay}日</span>
-                        </div>
-                    </div>
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                      <DatePicker
+                        label="賞味期限/消費期限"
+                        value={date}
+                        onChange={(newDate: Dayjs | null) => setDate(newDate || dayjs())}
+                        minDate={dayjs().startOf('day')}
+                        format="YYYY/MM/DD"
+                        slotProps={{ textField: { fullWidth: true, size: 'small' } }}
+                      />
+                    </LocalizationProvider>
 
-                    <div className="h-[120px] bg-gray-50 rounded-[2.5rem] overflow-hidden flex border border-gray-100 relative">
-                        <div className="absolute top-1/2 left-4 right-4 h-[40px] -translate-y-1/2 bg-white shadow-sm pointer-events-none border-y border-emerald-100 z-0" />
-                        <div ref={monthScrollRef} onScroll={(e) => { const idx = Math.round(e.currentTarget.scrollTop / 40); if (months[idx] && months[idx] !== selMonth) setSelMonth(months[idx]); }} className="flex-1 overflow-y-scroll snap-y snap-mandatory scrollbar-hide py-[40px] z-10 text-center">
-                            {months.map(m => <div key={m} className={`h-[40px] flex items-center justify-center snap-center font-black ${selMonth === m ? 'text-emerald-600 text-xl' : 'text-gray-300 text-sm'}`}>{m}月</div>)}
-                        </div>
-                        <div ref={dayScrollRef} onScroll={(e) => { const idx = Math.round(e.currentTarget.scrollTop / 40); if (days[idx] && days[idx] !== selDay) setSelDay(days[idx]); }} className="flex-1 overflow-y-scroll snap-y snap-mandatory scrollbar-hide py-[40px] z-10 text-center">
-                            {days.map(d => <div key={d} className={`h-[40px] flex items-center justify-center snap-center font-black ${selDay === d ? 'text-emerald-600 text-xl' : 'text-gray-300 text-sm'}`}>{d}日</div>)}
-                        </div>
-                    </div>
-
+                    <input type="hidden" name="trashDate" value={date.format('YYYY-MM-DD')} />
                     <input type="hidden" name="buyDate" value={today.toISOString().split('T')[0]} />
                     <button type="submit" className="w-full bg-gray-900 text-white py-6 rounded-[2.5rem] font-black text-xl shadow-2xl active:scale-[0.97] transition-all">冷蔵庫に追加 📥</button>
                 </form>
