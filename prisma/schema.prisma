@@ -1,18 +1,68 @@
 generator client {
   provider = "prisma-client-js"
-  engineType = "client"
 }
 
 datasource db {
   provider = "postgresql"
+  relationMode = "prisma"
 }
 
 model refrigerator {
-  id          Int      @id @default(autoincrement())
-  userId      String   // user_id
-  name        String   // name
-  quantity    String   // 個数
-  buyDate     DateTime @default(now()) // buy_date (デフォルトは今日)
-  trashDate   DateTime? // trash_date (空でもOK)
-  createdAt   DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  userId    String
+  name      String
+  quantity  String
+  buyDate   DateTime @default(now())
+  trashDate DateTime?
+  createdAt DateTime @default(now())
+
+  @@map("refrigerator")
+}
+
+model Recipe {
+  id           Int           @id @default(autoincrement())
+  userId       String
+  title        String
+  description  String?
+  image        String?
+  cookingTime  Int?
+  servings     Int           @default(2)
+  createdAt    DateTime      @default(now())
+  
+  ingredients  Ingredient[]
+  instructions Instruction[]
+  categoryId   Int?
+  category     Category?     @relation(fields: [categoryId], references: id)
+
+  @@map("recipes")
+}
+
+model Ingredient {
+  id        Int    @id @default(autoincrement())
+  recipeId  Int
+  name      String
+  amount    String
+  
+  recipe    Recipe @relation(fields: [recipeId], references: id, onDelete: Cascade)
+
+  @@map("ingredients")
+}
+
+model Instruction {
+  id          Int    @id @default(autoincrement())
+  recipeId    Int
+  stepNumber  Int
+  text        String
+  
+  recipe      Recipe @relation(fields: [recipeId], references: id, onDelete: Cascade)
+
+  @@map("instructions")
+}
+
+model Category {
+  id      Int      @id @default(autoincrement())
+  name    String
+  recipes Recipe[]
+
+  @@map("categories")
 }

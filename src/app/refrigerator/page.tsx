@@ -1,8 +1,9 @@
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
+import { refrigerator } from '@prisma/client';
 
 export default async function RefrigeratorPage() {
-  let foods = [];
+  let foods: refrigerator[] = [];
   try {
     // NeonDBからデータを取得
     foods = await prisma.refrigerator.findMany({

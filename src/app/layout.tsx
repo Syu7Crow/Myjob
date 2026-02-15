@@ -22,7 +22,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {/* メニュー項目 */}
           <div className="flex flex-row md:flex-col flex-1 justify-around md:justify-start p-2 md:px-4 md:space-y-1">
             <MenuLink href="/" icon="🏠" label="ホーム" />
-            <MenuLink href="/refrigerator" icon="📦" label="冷蔵庫" />
             <MenuLink href="/scan" icon="📷" label="スキャン" />
             <MenuLink href="/recipe" icon="🍳" label="レシピ" />
           </div>

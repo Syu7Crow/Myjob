@@ -1,97 +1,100 @@
-'use client';
+import { prisma } from '@/lib/prisma';
+import Link from 'next/link';
+// Prismaから生成された型をインポート
+import { Recipe, Ingredient } from '@prisma/client';
 
-export default function RecipePage() {
-    // 1. 冷蔵庫にある材料（ダミー）
-    const myIngredients = ["たまご", "鶏もも肉", "キャベツ"];
+// レシピに材料が含まれた状態の型を定義
+type RecipeWithIngredients = Recipe & {
+    ingredients: Ingredient[];
+};
 
-    // 2. 提案レシピのデータ
-    const recipes = [
-        {
-            id: 1,
-            title: "ふわとろ親子丼",
-            time: "15分",
-            matchIngredients: ["たまご", "鶏もも肉"],
-            image: "🍳",
-            description: "冷蔵庫の鶏肉と卵でパパッと作れる定番メニューです。",
-            difficulty: "簡単"
-        },
-        {
-            id: 2,
-            title: "鶏肉とキャベツの旨塩炒め",
-            time: "10分",
-            matchIngredients: ["鶏もも肉", "キャベツ"],
-            image: "🥗",
-            description: "キャベツの甘みと鶏肉のジューシーさが相性抜群！",
-            difficulty: "普通"
-        },
-        {
-            id: 3,
-            title: "具だくさんお好み焼き",
-            time: "20分",
-            matchIngredients: ["たまご", "キャベツ"],
-            image: "🥞",
-            description: "余ったキャベツを大量消費できるヘルシーレシピ。",
-            difficulty: "普通"
-        }
-    ];
+export default async function RecipePage() {
+    // ★ ここで型を指定！
+    let recipes: RecipeWithIngredients[] = [];
+
+    try {
+        recipes = await prisma.recipe.findMany({
+            include: {
+                ingredients: true,
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+    } catch (e) {
+        console.error("レシピ取得エラー:", e);
+    }
 
     return (
-        <div className="p-8 max-w-5xl mx-auto">
-            {/* ヘッダーセクション */}
-            <header className="mb-8">
-                <h1 className="text-3xl font-extrabold text-gray-900 mb-2">おすすめレシピ</h1>
-                <p className="text-gray-500">
-                    現在の冷蔵庫にある <span className="font-bold text-blue-600">{myIngredients.join("、")}</span> を使ったレシピです。
-                </p>
-            </header>
+        <div className="flex min-h-screen bg-[#F5F7FB]">
+            <main className="flex-1 p-6 md:p-12">
+                <div className="max-w-2xl mx-auto">
 
-            {/* レシピカード一覧 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {recipes.map((recipe) => (
-                    <div key={recipe.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
-                        <div className="h-32 bg-orange-50 flex items-center justify-center text-5xl">
-                            {recipe.image}
-                        </div>
-                        <div className="p-5">
-                            <div className="flex justify-between items-start mb-2">
-                                <h2 className="text-lg font-bold text-gray-800">{recipe.title}</h2>
-                                <span className="text-xs font-semibold px-2 py-1 bg-green-100 text-green-700 rounded">
-                                    {recipe.difficulty}
-                                </span>
-                            </div>
+                    {/* ナビゲーション */}
+                    <div className="flex gap-4 mb-8">
+                        <Link href="/refrigerator" className="bg-white text-gray-400 px-6 py-2 rounded-full font-bold hover:bg-gray-50 transition-colors">
+                            冷蔵庫
+                        </Link>
+                        <button className="bg-blue-600 text-white px-6 py-2 rounded-full font-bold shadow-md shadow-blue-100">
+                            レシピ
+                        </button>
+                    </div>
 
-                            <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                                {recipe.description}
-                            </p>
-
-                            <div className="flex flex-wrap gap-2 mb-4">
-                                {recipe.matchIngredients.map((ing) => (
-                                    <span key={ing} className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
-                                        #{ing}
-                                    </span>
-                                ))}
-                            </div>
-
-                            <div className="flex justify-between items-center pt-4 border-t border-gray-50">
-                                <span className="text-sm text-gray-400">⏱ {recipe.time}</span>
-                                <button className="text-sm font-bold text-blue-600 hover:text-blue-800">
-                                    レシピを見る →
-                                </button>
-                            </div>
+                    {/* ヘッダー */}
+                    <div className="flex justify-between items-end mb-6">
+                        <div>
+                            <h1 className="text-3xl font-extrabold text-gray-800">Recipes</h1>
+                            <p className="text-sm text-gray-400 mt-1">おすすめの献立</p>
                         </div>
                     </div>
-                ))}
-            </div>
 
-            {/* 材料が足りない時の案内 */}
-            <div className="mt-12 p-6 bg-blue-50 rounded-2xl text-center">
-                <p className="text-blue-700 font-medium">
-                    「玉ねぎ」があれば、さらに5件のレシピが作れます！
-                </p>
-                <button className="mt-2 text-sm text-blue-600 underline font-bold">
-                    買い物リストに追加する
-                </button>
-            </div>
+                    {/* レシピリスト */}
+                    <div className="grid gap-4 mb-24">
+                        {recipes.length === 0 ? (
+                            <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-gray-100">
+                                <p className="text-gray-400 font-bold">まだレシピがありません 🍳</p>
+                                <p className="text-xs text-gray-300 mt-2 text-balance">AIに冷蔵庫の食材から考えてもらいましょう</p>
+                            </div>
+                        ) : (
+                            recipes.map((recipe: any) => (
+                                <div key={recipe.id} className="bg-white overflow-hidden rounded-2xl shadow-sm border border-gray-50 transition-all hover:shadow-md">
+                                    <div className="p-5">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <h2 className="text-xl font-bold text-gray-800">{recipe.title}</h2>
+                                                <p className="text-sm text-gray-500 mt-1 line-clamp-2">{recipe.description}</p>
+                                            </div>
+                                            <span className="bg-orange-50 text-orange-500 text-[10px] font-black px-2 py-1 rounded-lg">
+                                                {recipe.cookingTime}分
+                                            </span>
+                                        </div>
+
+                                        <div className="flex flex-wrap gap-2 mt-4">
+                                            {recipe.ingredients.slice(0, 3).map((ing: any) => (
+                                                <span key={ing.id} className="text-[10px] bg-gray-50 text-gray-400 px-2 py-1 rounded-md">
+                                                    {ing.name}
+                                                </span>
+                                            ))}
+                                            {recipe.ingredients.length > 3 && (
+                                                <span className="text-[10px] text-gray-300 self-center">...他</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+
+                    {/* AIレシピ生成ボタン（将来用） */}
+                    <div className="fixed bottom-8 left-0 right-0 px-6">
+                        <button
+                            className="max-w-2xl mx-auto w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center space-x-2 shadow-xl shadow-blue-200 hover:opacity-90 transition-all active:scale-[0.98]"
+                        >
+                            <span className="text-xl">✨</span>
+                            <span>AIにレシピを考えてもらう</span>
+                        </button>
+                    </div>
+
+                </div>
+            </main>
         </div>
     );
 }
