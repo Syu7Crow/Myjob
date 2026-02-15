@@ -1,3 +1,4 @@
+// src/lib/actions.ts
 "use server";
 
 import { prisma } from "@/lib/prisma";
@@ -11,15 +12,13 @@ export async function addFood(formData: FormData) {
 
   await prisma.refrigerator.create({
     data: {
-      userId: "user_01", // 認証を入れるまでは固定値でOK
+      userId: "user_01", 
       name: name,
       quantity: quantity,
       trashDate: trashDate ? new Date(trashDate) : null,
     },
   });
 
-  // データを更新したので冷蔵庫ページを再読込させる
   revalidatePath("/refrigerator");
-  // 冷蔵庫ページに戻る
   redirect("/refrigerator");
 }
