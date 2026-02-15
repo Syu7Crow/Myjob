@@ -1,48 +1,61 @@
-import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
+import Link from 'next/link';
 
 export default async function RefrigeratorPage() {
-  // DBから全食材を取得
-  const foods = await prisma.food.findMany({
-    where: { userId: "user_01" },
-    orderBy: { buyDate: 'asc' },
-  });
+  let foods = [];
+  try {
+    // NeonDBからデータを取得
+    foods = await prisma.refrigerator.findMany({
+      orderBy: { buyDate: 'asc' },
+    });
+  } catch (e) {
+    console.error("DB取得エラー:", e);
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-md mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">冷蔵庫の中身</h1>
-          <Link href="/" className="text-sm text-blue-600 hover:underline">ホームへ</Link>
-        </div>
+    <div className="flex min-h-screen bg-[#F5F7FB]">
+      {/* メインコンテンツ */}
+      <main className="flex-1 p-8 md:p-12">
+        <div className="max-w-2xl mx-auto">
+          {/* ヘッダー */}
+          <div className="flex justify-between items-center mb-10">
+            <h1 className="text-2xl font-bold text-gray-800">冷蔵庫の中身</h1>
+            <Link href="/" className="text-sm text-blue-500 hover:underline">ホームへ</Link>
+          </div>
 
-        <div className="space-y-4">
-          {foods.length === 0 ? (
-            <p className="text-center text-gray-500 py-10">食材がありません</p>
-          ) : (
-            // (food: any) と書くことで TypeScript のエラーを強制回避します
-            foods.map((food: any) => (
-              <div key={food.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
-                <div>
-                  <h2 className="font-bold text-lg text-gray-700">{food.name}</h2>
-                  <p className="text-xs text-gray-400">
-                    期限: {food.trashDate
-                      ? new Date(food.trashDate).toLocaleDateString('ja-JP')
-                      : "未設定"}
-                  </p>
+          {/* 食材カードリスト */}
+          <div className="space-y-3 mb-10">
+            {foods.length === 0 ? (
+              <p className="text-center py-10 text-gray-400">食材が登録されていません</p>
+            ) : (
+              foods.map((food: any) => (
+                <div key={food.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-50 flex justify-between items-center transition-hover hover:shadow-md">
+                  <div className="flex flex-col">
+                    <span className="text-lg font-bold text-gray-700">{food.name}</span>
+                    <span className="text-xs text-gray-400">
+                      期限: {food.trashDate ? new Date(food.trashDate).toLocaleDateString('ja-JP') : '未設定'}
+                    </span>
+                  </div>
+                  <div className="flex items-center">
+                    <span className="bg-blue-100 text-blue-600 text-xs font-bold px-3 py-1 rounded-full">
+                      {food.quantity}
+                    </span>
+                  </div>
                 </div>
-                <div className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-700">
-                  {food.quantity}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+              ))
+            )}
+          </div>
 
-        <Link href="/add" className="block w-full mt-8 bg-blue-600 text-white py-3 rounded-xl font-bold shadow-md hover:bg-blue-700 transition text-center">
-          ＋ 食材を追加する
-        </Link>
-      </div>
+          {/* 追加ボタン */}
+          <Link
+            href="/add"
+            className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold flex items-center justify-center space-x-2 shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all active:scale-[0.98]"
+          >
+            <span>＋</span>
+            <span>食材を追加する</span>
+          </Link>
+        </div>
+      </main>
     </div>
   );
 }

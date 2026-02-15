@@ -4,7 +4,7 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { addFood } from "@/lib/actions";
 import Link from 'next/link';
 
-// 型の定義（ビルドエラー防止）
+// --- 型定義 ---
 type FoodSub = {
     icon: string;
     parts: string[];
@@ -19,22 +19,7 @@ type FoodCategory = {
 };
 
 export default function AddFoodPage() {
-    const [name, setName] = useState("");
-    const [quantity, setQuantity] = useState(1);
-    const [unit, setUnit] = useState("個");
-
-    const [activeCategory, setActiveCategory] = useState<string | null>(null);
-    const [activeSubCategory, setActiveSubCategory] = useState<string | null>(null);
-
-    const today = new Date();
-    const [selYear, setSelYear] = useState(today.getFullYear());
-    const [selMonth, setSelMonth] = useState(today.getMonth() + 1);
-    const [selDay, setSelDay] = useState(today.getDate());
-
-    const monthScrollRef = useRef<HTMLDivElement>(null);
-    const dayScrollRef = useRef<HTMLDivElement>(null);
-
-    const foodHierarchy: Record<string, FoodCategory> = {
+    const [hierarchy, setHierarchy] = useState<Record<string, FoodCategory>>({
         '肉': {
             icon: '🥩', days: 2, qty: 300, unit: 'g',
             subs: {
@@ -55,7 +40,6 @@ export default function AddFoodPage() {
         '飲料': {
             icon: '🥤', days: 14, qty: 1, unit: '本',
             subs: {
-                'コーラ': { icon: '🥤', parts: ['500ml', '1.5L', '缶'] },
                 '牛乳': { icon: '🥛', parts: ['1000ml', '500ml', '低脂肪'] },
                 'お茶': { icon: '🍵', parts: ['500ml', '2L', '茶葉'] },
             }
@@ -63,24 +47,33 @@ export default function AddFoodPage() {
         'その他': {
             icon: '📦', days: 7, qty: 1, unit: '個',
             subs: {
-                'たまご': { icon: '🥚', parts: ['10個パック', '6個パック', 'バラ'] },
+                'たまご': { icon: '🥚', parts: ['10個パック', '6個パック'] },
                 '納豆': { icon: '📦', parts: ['3パック', '2パック'] },
-                '豆腐': { icon: '⬜', parts: ['絹', '木綿', '3個パック'] },
             }
         }
-    };
+    });
 
-    const mainQuickItems = [
+    const [name, setName] = useState("");
+    const [quantity, setQuantity] = useState(1);
+    const [unit, setUnit] = useState("個");
+    const [activeCategory, setActiveCategory] = useState<string | null>(null);
+    const [activeSubCategory, setActiveSubCategory] = useState<string | null>(null);
+
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    const [selYear, setSelYear] = useState(today.getFullYear());
+    const [selMonth, setSelMonth] = useState(today.getMonth() + 1);
+    const [selDay, setSelDay] = useState(today.getDate());
+
+    const monthScrollRef = useRef<HTMLDivElement>(null);
+    const dayScrollRef = useRef<HTMLDivElement>(null);
+
+    const mainCategories = [
         { label: '肉', icon: '🥩' },
         { label: '野菜', icon: '🥬' },
         { label: '飲料', icon: '🥤' },
         { label: 'その他', icon: '📦' },
     ];
-
-    const months = Array.from({ length: 12 }, (_, i) => i + 1);
-    const daysInMonth = useMemo(() => new Date(selYear, selMonth, 0).getDate(), [selYear, selMonth]);
-    const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-    const dateStr = useMemo(() => `${selYear}-${String(selMonth).padStart(2, '0')}-${String(selDay).padStart(2, '0')}`, [selYear, selMonth, selDay]);
 
     const updateExpiration = (daysToAdd: number) => {
         const d = new Date();
@@ -92,7 +85,7 @@ export default function AddFoodPage() {
         setActiveCategory(label);
         setActiveSubCategory(null);
         setName(label);
-        const config = foodHierarchy[label];
+        const config = hierarchy[label];
         if (config) {
             setQuantity(config.qty);
             setUnit(config.unit);
@@ -100,110 +93,146 @@ export default function AddFoodPage() {
         }
     };
 
-    const syncScroll = (ref: React.RefObject<HTMLDivElement | null>, value: number, offset: number = 1) => {
-        if (ref.current) ref.current.scrollTo({ top: (value - offset) * 40, behavior: 'smooth' });
+    // --- 2段目（鶏肉など）を追加する関数 ---
+    const addNewSubCategory = () => {
+        if (!activeCategory) return;
+        const newSubName = prompt(`${activeCategory}に新しく追加する項目名を入力してください`);
+        if (!newSubName) return;
+
+        setHierarchy(prev => ({
+            ...prev,
+            [activeCategory]: {
+                ...prev[activeCategory],
+                subs: {
+                    ...prev[activeCategory].subs,
+                    [newSubName]: { icon: '✨', parts: ['通常'] }
+                }
+            }
+        }));
+        setActiveSubCategory(newSubName);
+        setName(newSubName);
+    };
+
+    // --- 3段目（ささみなど）を追加する関数 ---
+    const addNewPart = () => {
+        if (!activeCategory || !activeSubCategory) return;
+        const newPartName = prompt(`${activeSubCategory}の新しい部位・種類を入力してください`);
+        if (!newPartName) return;
+
+        setHierarchy(prev => {
+            const currentParts = prev[activeCategory].subs[activeSubCategory].parts;
+            return {
+                ...prev,
+                [activeCategory]: {
+                    ...prev[activeCategory],
+                    subs: {
+                        ...prev[activeCategory].subs,
+                        [activeSubCategory]: {
+                            ...prev[activeCategory].subs[activeSubCategory],
+                            parts: [...currentParts, newPartName]
+                        }
+                    }
+                }
+            };
+        });
+        setName(`${activeSubCategory} ${newPartName}`);
     };
 
     useEffect(() => {
-        syncScroll(monthScrollRef, selMonth);
-        syncScroll(dayScrollRef, selDay);
+        const sync = (ref: React.RefObject<HTMLDivElement | null>, val: number, offset: number = 1) => {
+            if (ref.current) ref.current.scrollTo({ top: (val - offset) * 40, behavior: 'smooth' });
+        };
+        sync(monthScrollRef, selMonth);
+        sync(dayScrollRef, selDay);
     }, [selMonth, selDay]);
+
+    const months = Array.from({ length: 12 }, (_, i) => i + 1);
+    const daysInMonth = new Date(selYear, selMonth, 0).getDate();
+    const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+    const dateStr = `${selYear}-${String(selMonth).padStart(2, '0')}-${String(selDay).padStart(2, '0')}`;
 
     return (
         <div className="min-h-screen bg-[#F8FAFA] p-4 flex flex-col items-center">
-            <div className="w-full max-w-md bg-white rounded-[3rem] shadow-2xl border border-emerald-50 p-8">
-                <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-2xl font-black text-gray-800 tracking-tight">食材登録</h1>
-                    <Link href="/refrigerator" className="text-gray-400">✕</Link>
+            <div className="w-full max-w-md bg-white rounded-[3.5rem] shadow-2xl border border-emerald-50 p-8 pb-12">
+                <div className="flex justify-between items-center mb-8">
+                    <h1 className="text-2xl font-black text-gray-800 tracking-tight">食材を追加</h1>
+                    <Link href="/refrigerator" className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-400">✕</Link>
                 </div>
 
                 {/* 1段目 */}
                 <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
-                    {mainQuickItems.map((item) => (
-                        <button key={item.label} type="button" onClick={() => handleMainSelect(item.label)}
-                            className={`flex-shrink-0 flex flex-col items-center gap-1 p-3 w-20 rounded-2xl transition-all border ${activeCategory === item.label ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-gray-100 text-gray-500'}`}>
-                            <span className="text-2xl">{item.icon}</span>
-                            <span className="text-[10px] font-bold">{item.label}</span>
+                    {mainCategories.map((cat) => (
+                        <button key={cat.label} type="button" onClick={() => handleMainSelect(cat.label)}
+                            className={`flex-shrink-0 flex flex-col items-center gap-1 p-4 w-20 rounded-[2rem] transition-all border-2 ${activeCategory === cat.label ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg' : 'bg-white border-gray-100 text-gray-400'}`}>
+                            <span className="text-2xl">{cat.icon}</span>
+                            <span className="text-[10px] font-black">{cat.label}</span>
                         </button>
                     ))}
                 </div>
 
                 {/* 2段目 */}
-                {activeCategory && foodHierarchy[activeCategory]?.subs && (
-                    <div className="flex gap-2 overflow-x-auto py-2 scrollbar-hide">
-                        {Object.entries(foodHierarchy[activeCategory].subs).map(([subKey, subVal]) => (
-                            <button key={subKey} type="button" onClick={() => { setActiveSubCategory(subKey); setName(subKey); }}
-                                className={`flex-shrink-0 px-4 py-2 rounded-xl font-bold text-xs border-2 transition-all ${activeSubCategory === subKey ? 'bg-emerald-100 border-emerald-500 text-emerald-700' : 'bg-gray-50 border-transparent text-gray-400'}`}>
+                {activeCategory && (
+                    <div className="flex gap-2 overflow-x-auto py-3 scrollbar-hide">
+                        {Object.entries(hierarchy[activeCategory].subs).map(([subKey, subVal]) => (
+                            <button key={subKey} type="button"
+                                onClick={() => { setActiveSubCategory(subKey); setName(subKey); }}
+                                className={`flex-shrink-0 px-5 py-2.5 rounded-2xl font-bold text-xs border-2 transition-all ${activeSubCategory === subKey ? 'bg-emerald-100 border-emerald-500 text-emerald-700' : 'bg-gray-50 border-transparent text-gray-400'}`}>
                                 {subVal.icon} {subKey}
                             </button>
                         ))}
+                        <button type="button" onClick={addNewSubCategory} className="flex-shrink-0 px-5 py-2.5 rounded-2xl font-bold text-xs border-2 border-dashed border-emerald-200 text-emerald-500 bg-emerald-50/30">＋ 追加</button>
                     </div>
                 )}
 
-                {/* 3段目 */}
-                {activeCategory && activeSubCategory && foodHierarchy[activeCategory]?.subs?.[activeSubCategory] && (
+                {/* 3段目: ここに ＋追加 ボタンを組み込み */}
+                {activeCategory && activeSubCategory && (
                     <div className="flex flex-wrap gap-2 py-3">
-                        {foodHierarchy[activeCategory].subs[activeSubCategory].parts.map((part) => (
+                        {hierarchy[activeCategory].subs[activeSubCategory].parts.map((part) => (
                             <button key={part} type="button" onClick={() => setName(`${activeSubCategory} ${part}`)}
-                                className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all ${name === `${activeSubCategory} ${part}` ? 'bg-gray-800 text-white' : 'bg-white border-gray-200 text-gray-500'}`}>
+                                className={`px-4 py-2 rounded-xl text-[11px] font-black border transition-all ${name === `${activeSubCategory} ${part}` ? 'bg-gray-800 text-white' : 'bg-white border-gray-200 text-gray-500'}`}>
                                 {part}
                             </button>
                         ))}
+                        {/* 3段目の追加ボタン */}
+                        <button type="button" onClick={addNewPart} className="px-4 py-2 rounded-xl text-[11px] font-black border-2 border-dashed border-gray-300 text-gray-400 bg-gray-50/50">＋ 部位を追加</button>
                     </div>
                 )}
 
-                <form action={addFood} className="space-y-6 mt-4">
-                    <input name="name" value={name} onChange={(e) => setName(e.target.value)} required placeholder="食材名" className="w-full px-6 py-4 bg-gray-50 rounded-2xl font-bold outline-none" />
+                <form action={addFood} className="space-y-6 mt-6">
+                    <input name="name" value={name} onChange={(e) => setName(e.target.value)} required placeholder="食材の名前" className="w-full px-7 py-5 bg-gray-50 rounded-[2rem] font-bold text-gray-700 outline-none border-2 border-transparent focus:border-emerald-200 transition-all" />
 
-                    <div className="flex gap-2">
-                        {/* 数量入力: 少し幅を狭めて単位側に譲る */}
-                        <div className="flex-[1.8] flex items-center bg-gray-50 rounded-2xl px-1">
-                            <button type="button" onClick={() => setQuantity(q => Math.max(0, q - (unit === 'g' ? 50 : 1)))} className="w-10 h-10 text-emerald-500 font-black text-xl active:scale-90 transition-transform">−</button>
+                    <div className="flex gap-3">
+                        <div className="flex-[1.8] flex items-center bg-gray-50 rounded-[2rem] px-2">
+                            <button type="button" onClick={() => setQuantity(q => Math.max(0, q - (unit === 'g' ? 50 : 1)))} className="w-12 h-12 text-emerald-500 font-black text-2xl">−</button>
                             <input type="hidden" name="quantity" value={`${quantity}${unit}`} />
-                            <input
-                                type="text"
-                                value={quantity}
-                                onChange={(e) => setQuantity(Number(e.target.value.replace(/[^0-9]/g, '')))}
-                                className="w-full bg-transparent text-center font-bold text-gray-700 outline-none min-w-0"
-                            />
-                            <button type="button" onClick={() => setQuantity(q => q + (unit === 'g' ? 50 : 1))} className="w-10 h-10 text-emerald-500 font-black text-xl active:scale-90 transition-transform">+</button>
+                            <input type="text" value={quantity} onChange={(e) => setQuantity(Number(e.target.value.replace(/[^0-9]/g, '')))} className="flex-1 bg-transparent text-center font-bold text-gray-700 outline-none min-w-0" />
+                            <button type="button" onClick={() => setQuantity(q => q + (unit === 'g' ? 50 : 1))} className="w-12 h-12 text-emerald-500 font-black text-2xl">+</button>
                         </div>
+                        <select value={unit} onChange={(e) => setUnit(e.target.value)} className="flex-[1.2] bg-gray-50 rounded-[2rem] font-black text-gray-500 text-center outline-none cursor-pointer">
+                            {['個', 'パック', '本', 'g', 'ml', 'L', '袋'].map(u => <option key={u} value={u}>{u}</option>)}
+                        </select>
+                    </div>
 
-                        {/* 単位選択: 幅を確保し、右側の見切れを防止 */}
-                        <div className="flex-[1.2] relative">
-                            <select
-                                value={unit}
-                                onChange={(e) => setUnit(e.target.value)}
-                                className="w-full h-full bg-gray-50 rounded-2xl font-bold text-gray-600 text-center outline-none appearance-none pr-2 cursor-pointer border-r-8 border-transparent"
-                            >
-                                {['個', 'パック', '本', 'g', 'ml', 'L', '袋'].map(u => (
-                                    <option key={u} value={u}>{u}</option>
-                                ))}
-                            </select>
-                            {/* 下向き矢印などの装飾が必要なければそのままでOK */}
-                        </div>
-                    </div>  
-
-                    <div className="relative h-20">
-                        <input type="date" name="trashDate" value={dateStr} onChange={(e) => { const d = new Date(e.target.value); if (!isNaN(d.getTime())) { setSelYear(d.getFullYear()); setSelMonth(d.getMonth() + 1); setSelDay(d.getDate()); } }} className="absolute inset-0 opacity-0 z-30 cursor-pointer" />
-                        <div className="absolute inset-0 bg-emerald-50 border-2 border-emerald-100 rounded-3xl flex flex-col items-center justify-center">
-                            <span className="text-[10px] font-bold text-emerald-400">賞味期限</span>
-                            <span className="font-black text-emerald-600 text-xl">{selYear}年 {selMonth}月 {selDay}日</span>
+                    <div className="relative h-24">
+                        <input type="date" name="trashDate" value={dateStr} min={todayStr} onChange={(e) => { const val = e.target.value; if (!val) return; if (val < todayStr) { const d = new Date(todayStr); setSelYear(d.getFullYear()); setSelMonth(d.getMonth() + 1); setSelDay(d.getDate()); } else { const d = new Date(val); if (!isNaN(d.getTime())) { setSelYear(d.getFullYear()); setSelMonth(d.getMonth() + 1); setSelDay(d.getDate()); } } }} className="absolute inset-0 opacity-0 z-30 cursor-pointer" />
+                        <div className="absolute inset-0 bg-emerald-50 border-2 border-emerald-100 rounded-[2.5rem] flex flex-col items-center justify-center">
+                            <span className="text-[10px] font-black text-emerald-400 tracking-tighter uppercase mb-1">Expiration Date</span>
+                            <span className="font-black text-emerald-600 text-2xl tracking-tight">{selYear}年 {selMonth}月 {selDay}日</span>
                         </div>
                     </div>
 
-                    <div className="h-[120px] bg-gray-50 rounded-[2rem] overflow-hidden flex border border-gray-100 relative">
+                    <div className="h-[120px] bg-gray-50 rounded-[2.5rem] overflow-hidden flex border border-gray-100 relative">
                         <div className="absolute top-1/2 left-4 right-4 h-[40px] -translate-y-1/2 bg-white shadow-sm pointer-events-none border-y border-emerald-100 z-0" />
-                        <div ref={monthScrollRef} onScroll={(e) => { const index = Math.round(e.currentTarget.scrollTop / 40); if (months[index] && months[index] !== selMonth) setSelMonth(months[index]); }} className="flex-1 overflow-y-scroll snap-y snap-mandatory scrollbar-hide py-[40px] z-10 text-center">
-                            {months.map(m => <div key={m} className={`h-[40px] flex items-center justify-center snap-center font-bold ${selMonth === m ? 'text-emerald-600 text-xl' : 'text-gray-300 text-sm'}`}>{m}月</div>)}
+                        <div ref={monthScrollRef} onScroll={(e) => { const idx = Math.round(e.currentTarget.scrollTop / 40); if (months[idx] && months[idx] !== selMonth) setSelMonth(months[idx]); }} className="flex-1 overflow-y-scroll snap-y snap-mandatory scrollbar-hide py-[40px] z-10 text-center">
+                            {months.map(m => <div key={m} className={`h-[40px] flex items-center justify-center snap-center font-black ${selMonth === m ? 'text-emerald-600 text-xl' : 'text-gray-300 text-sm'}`}>{m}月</div>)}
                         </div>
-                        <div ref={dayScrollRef} onScroll={(e) => { const index = Math.round(e.currentTarget.scrollTop / 40); if (days[index] && days[index] !== selDay) setSelDay(days[index]); }} className="flex-1 overflow-y-scroll snap-y snap-mandatory scrollbar-hide py-[40px] z-10 text-center">
-                            {days.map(d => <div key={d} className={`h-[40px] flex items-center justify-center snap-center font-bold ${selDay === d ? 'text-emerald-600 text-xl' : 'text-gray-300 text-sm'}`}>{d}日</div>)}
+                        <div ref={dayScrollRef} onScroll={(e) => { const idx = Math.round(e.currentTarget.scrollTop / 40); if (days[idx] && days[idx] !== selDay) setSelDay(days[idx]); }} className="flex-1 overflow-y-scroll snap-y snap-mandatory scrollbar-hide py-[40px] z-10 text-center">
+                            {days.map(d => <div key={d} className={`h-[40px] flex items-center justify-center snap-center font-black ${selDay === d ? 'text-emerald-600 text-xl' : 'text-gray-300 text-sm'}`}>{d}日</div>)}
                         </div>
                     </div>
 
                     <input type="hidden" name="buyDate" value={today.toISOString().split('T')[0]} />
-                    <button type="submit" className="w-full bg-gray-900 text-white py-5 rounded-[2rem] font-black text-lg shadow-xl active:scale-95 transition-all">冷蔵庫に追加 📥</button>
+                    <button type="submit" className="w-full bg-gray-900 text-white py-6 rounded-[2.5rem] font-black text-xl shadow-2xl active:scale-[0.97] transition-all">冷蔵庫に追加 📥</button>
                 </form>
             </div>
         </div>
