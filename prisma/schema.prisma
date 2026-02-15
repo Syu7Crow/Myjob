@@ -27,6 +27,7 @@ model Recipe {
   image        String?
   cookingTime  Int?
   servings     Int           @default(2)
+  searchUrl    String?     // ★ これを追加
   createdAt    DateTime      @default(now())
   
   ingredients  Ingredient[]
